@@ -2,8 +2,9 @@ using UnityEngine;
 
 public class PlayerInteraction : MonoBehaviour
 {
+    public Inventory inventory;
     public int damage = 1;
-    public float interactionRange = 2f;  // Set the range within which the player can interact
+    public float interactionRange = 2f;
     public LayerMask resourceLayer;
 
     void Update()
@@ -19,15 +20,14 @@ public class PlayerInteraction : MonoBehaviour
                 if (resource != null)
                 {
                     float distanceToResource = Vector2.Distance(transform.position, hit.collider.transform.position);
-
-                    // Check if player is within range
                     if (distanceToResource <= interactionRange)
                     {
                         resource.TakeDamage(damage);
-                    }
-                    else
-                    {
-                        Debug.Log("Too far away to interact with resource.");
+
+                        if (resource.health <= 0)  // Assuming TakeDamage reduces health to 0 when destroyed
+                        {
+                            inventory.AddItem(resource.resourceType, 1); // Add resource to inventory
+                        }
                     }
                 }
             }

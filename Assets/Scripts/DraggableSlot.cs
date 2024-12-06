@@ -3,13 +3,10 @@ using UnityEngine.EventSystems;
 
 public class DraggableSlot : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDragHandler
 {
-    private RectTransform rectTransform;
     private CanvasGroup canvasGroup;
+    private RectTransform rectTransform;
 
-    private Vector3 startPosition;
-    private Transform originalParent;
-
-    void Awake()
+    private void Awake()
     {
         rectTransform = GetComponent<RectTransform>();
         canvasGroup = GetComponent<CanvasGroup>();
@@ -17,21 +14,21 @@ public class DraggableSlot : MonoBehaviour, IBeginDragHandler, IDragHandler, IEn
 
     public void OnBeginDrag(PointerEventData eventData)
     {
-        startPosition = rectTransform.position;
-        originalParent = rectTransform.parent;
-        rectTransform.SetParent(originalParent.parent);
+        // Reduce visibility and allow dropping
+        canvasGroup.alpha = 0.6f;
         canvasGroup.blocksRaycasts = false;
     }
 
     public void OnDrag(PointerEventData eventData)
     {
-        rectTransform.position = Input.mousePosition;
+        // No movement of the slot itself
+        // Remove this if you want visual movement: rectTransform.anchoredPosition += eventData.delta;
     }
 
     public void OnEndDrag(PointerEventData eventData)
     {
-        rectTransform.SetParent(originalParent);
-        rectTransform.position = startPosition;
+        // Reset visibility and block raycasts
+        canvasGroup.alpha = 1f;
         canvasGroup.blocksRaycasts = true;
     }
 }

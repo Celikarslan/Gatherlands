@@ -1,152 +1,112 @@
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
-using System.Collections.Generic;
 
 public class HotbarUI : MonoBehaviour
 {
-    public GameObject hotbarSlotPrefab; // Prefab for each hotbar slot
+    public GameObject hotbarSlotPrefab; // Prefab for hotbar slots
     public Transform hotbarContainer; // Parent container for hotbar slots
+    private List<GameObject> slots = new List<GameObject>(); // List of hotbar slots
 
-    private List<GameObject> slots = new List<GameObject>(); // List of all hotbar slots
-    private Dictionary<int, string> slotToResourceMap = new Dictionary<int, string>(); // Maps slot index to resource type
+    private Dictionary<int, string> slotToResourceMap = new Dictionary<int, string>(); // Map slot index to resource type
+    private int hotbarSize = 10; // Number of slots in the hotbar
 
     private void Start()
     {
         InitializeHotbar();
     }
 
-    private void OnEnable()
+    public void AddResource(string resourceType)
     {
-        if (ResourceManager.Instance != null)
-            ResourceManager.Instance.OnInventoryChanged += OnInventoryChangedHandler;
-    }
-
-    private void OnDisable()
-    {
-        if (ResourceManager.Instance != null)
-            ResourceManager.Instance.OnInventoryChanged -= OnInventoryChangedHandler;
-    }
-
-    private void OnInventoryChangedHandler(string resourceType, int count)
-    {
-        // Update only the slot corresponding to the changed resource
-        int slotIndex = FindSlotIndexForResource(resourceType);
-
-        if (count > 0) // Resource exists or was updated
+        // Find the first empty slot
+        for (int i = 0; i < hotbarSize; i++)
         {
-            if (slotIndex >= 0)
+            if (!slotToResourceMap.ContainsKey(i))
             {
-                // Update the existing slot
-                UpdateSlot(slotIndex, resourceType, count);
-            }
-            else
-            {
-                // Find the first empty slot and assign the resource
-                slotIndex = FindFirstEmptySlot();
-                if (slotIndex >= 0)
-                {
-                    slotToResourceMap[slotIndex] = resourceType;
-                    UpdateSlot(slotIndex, resourceType, count);
-                }
+                slotToResourceMap[i] = resourceType;
+                RefreshSlot(i);
+                return;
             }
         }
-        else // Resource was removed or depleted
+
+        Debug.LogWarning("No empty slots available in the hotbar!");
+    }
+
+    public void AddOrIncrementResource(string resourceType)
+    {
+        // Check if the resource already exists in the hotbar
+        foreach (var entry in slotToResourceMap)
         {
-            if (slotIndex >= 0)
+            if (entry.Value == resourceType)
             {
-                ClearSlot(slotIndex);
+                RefreshSlot(entry.Key); // Refresh the existing slot
+                return;
             }
         }
+
+        // If not found, add it to a new slot
+        AddResource(resourceType);
     }
 
 
 
     private void InitializeHotbar()
     {
-        for (int i = 0; i < 10; i++) // Create 10 slots
+        for (int i = 0; i < hotbarSize; i++) // Adjust for the number of slots
         {
             GameObject slot = Instantiate(hotbarSlotPrefab, hotbarContainer);
             RectTransform slotRectTransform = slot.GetComponent<RectTransform>();
-            slotRectTransform.sizeDelta = new Vector2(200, 200); // Set slot size
+
+            if (slotRectTransform != null)
+            {
+                // Set the slot size to 200x200
+                slotRectTransform.sizeDelta = new Vector2(200, 200);
+            }
 
             HotbarSlot hotbarSlot = slot.GetComponent<HotbarSlot>();
-            hotbarSlot.slotIndex = i; // Assign a unique index to each slot
-            hotbarSlot.itemIcon = slot.transform.GetChild(0).GetComponent<Image>(); // Assign the icon reference
-            hotbarSlot.resourceCount = slot.transform.GetChild(1).GetComponent<TextMeshProUGUI>(); // Assign the count reference
 
+            if (hotbarSlot == null)
+            {
+                Debug.LogError($"HotbarSlot component is missing in prefab for slot {i}!");
+                continue;
+            }
+
+            hotbarSlot.Initialize(i, this); // Assign index and HotbarUI reference
             slots.Add(slot);
 
-            // Initialize the slot as empty
-            ClearSlot(i);
+            ClearSlot(i); // Initialize the slot as empty
         }
     }
 
-    public void UpdateHotbar()
+
+    public void SwapResources(int indexA, int indexB)
     {
-        Debug.Log("Updating Hotbar...");
-        Dictionary<string, int> inventory = ResourceManager.Instance.GetInventory();
+        // Swap resources in the map
+        string tempResource = slotToResourceMap.ContainsKey(indexA) ? slotToResourceMap[indexA] : null;
 
-        // Update or add resources to existing slots
-        foreach (var resource in inventory)
+        if (slotToResourceMap.ContainsKey(indexB))
         {
-            int slotIndex = FindSlotIndexForResource(resource.Key);
-            if (slotIndex >= 0)
-            {
-                // Update the existing slot
-                UpdateSlot(slotIndex, resource.Key, resource.Value);
-            }
-            else
-            {
-                // Find the first empty slot and assign the resource
-                slotIndex = FindFirstEmptySlot();
-                if (slotIndex >= 0)
-                {
-                    slotToResourceMap[slotIndex] = resource.Key;
-                    UpdateSlot(slotIndex, resource.Key, resource.Value);
-                }
-            }
-        }
-
-        // Clear remaining slots that are unused
-        ClearUnusedSlots(inventory);
-
-        DebugSlotMapping(); // Optional: Debug the slot-to-resource mapping
-    }
-
-
-    public void SwapSlots(int indexA, int indexB)
-    {
-        Debug.Log($"Swapping slots {indexA} and {indexB}");
-
-        // Temporarily store the resource types of both slots
-        string resourceA = slotToResourceMap.ContainsKey(indexA) ? slotToResourceMap[indexA] : null;
-        string resourceB = slotToResourceMap.ContainsKey(indexB) ? slotToResourceMap[indexB] : null;
-
-        // Perform the swap in the map
-        if (resourceA != null)
-        {
-            slotToResourceMap[indexB] = resourceA;
-        }
-        else
-        {
-            slotToResourceMap.Remove(indexB);
-        }
-
-        if (resourceB != null)
-        {
-            slotToResourceMap[indexA] = resourceB;
+            slotToResourceMap[indexA] = slotToResourceMap[indexB];
         }
         else
         {
             slotToResourceMap.Remove(indexA);
         }
 
-        // Refresh the visuals for both slots
+        if (tempResource != null)
+        {
+            slotToResourceMap[indexB] = tempResource;
+        }
+        else
+        {
+            slotToResourceMap.Remove(indexB);
+        }
+
+        // Refresh visuals for both slots
         RefreshSlot(indexA);
         RefreshSlot(indexB);
     }
-
 
     private void RefreshSlot(int slotIndex)
     {
@@ -158,8 +118,7 @@ public class HotbarUI : MonoBehaviour
             string resourceType = slotToResourceMap[slotIndex];
             int resourceCount = ResourceManager.Instance.GetResourceCount(resourceType);
 
-            hotbarSlot.itemIcon.sprite = GetResourceIcon(resourceType);
-            hotbarSlot.resourceCount.text = resourceCount.ToString();
+            hotbarSlot.UpdateSlot(GetResourceIcon(resourceType), resourceCount.ToString());
         }
         else
         {
@@ -172,79 +131,25 @@ public class HotbarUI : MonoBehaviour
         GameObject slot = slots[slotIndex];
         HotbarSlot hotbarSlot = slot.GetComponent<HotbarSlot>();
 
-        hotbarSlot.itemIcon.sprite = null; // Clear the icon
-        hotbarSlot.resourceCount.text = ""; // Clear the count
-
-        // Remove from the resource map
-        if (slotToResourceMap.ContainsKey(slotIndex))
+        if (hotbarSlot == null)
         {
-            slotToResourceMap.Remove(slotIndex);
+            Debug.LogError($"HotbarSlot component is missing from slot {slotIndex}!");
+            return;
         }
+
+        hotbarSlot.UpdateSlot(null, ""); // Clear the slot
     }
 
-    private void ClearUnusedSlots(Dictionary<string, int> inventory)
-    {
-        for (int i = 0; i < slots.Count; i++)
-        {
-            if (slotToResourceMap.ContainsKey(i))
-            {
-                string resourceType = slotToResourceMap[i];
-                if (!inventory.ContainsKey(resourceType))
-                {
-                    ClearSlot(i);
-                }
-            }
-        }
-    }
-
-    private int FindSlotIndexForResource(string resourceType)
-    {
-        foreach (var entry in slotToResourceMap)
-        {
-            if (entry.Value == resourceType)
-                return entry.Key;
-        }
-        return -1; // Not found
-    }
-
-    private int FindFirstEmptySlot()
-    {
-        for (int i = 0; i < slots.Count; i++)
-        {
-            if (!slotToResourceMap.ContainsKey(i))
-                return i;
-        }
-        return -1; // No empty slots
-    }
-
-    private void UpdateSlot(int slotIndex, string resourceType, int resourceCount)
-    {
-        GameObject slot = slots[slotIndex];
-        HotbarSlot hotbarSlot = slot.GetComponent<HotbarSlot>();
-
-        hotbarSlot.itemIcon.sprite = GetResourceIcon(resourceType);
-        hotbarSlot.resourceCount.text = resourceCount.ToString();
-
-        Debug.Log($"Updated slot {slotIndex} with {resourceType} ({resourceCount})");
-    }
 
     private Sprite GetResourceIcon(string resourceType)
     {
-        Sprite icon = Resources.Load<Sprite>($"Icons/{resourceType}");
-        if (icon == null)
-        {
-            Debug.LogWarning($"Icon for resource '{resourceType}' not found! Using default icon.");
-            icon = Resources.Load<Sprite>("Icons/DefaultIcon"); // Ensure you have a default icon
-        }
-        return icon;
+        // Dynamically load resource icons from the Resources folder
+        return Resources.Load<Sprite>($"Icons/{resourceType}");
     }
 
-    private void DebugSlotMapping()
+    public void AddResourceToSlot(int slotIndex, string resourceType)
     {
-        Debug.Log("Slot-to-Resource Map:");
-        foreach (var entry in slotToResourceMap)
-        {
-            Debug.Log($"Slot {entry.Key}: {entry.Value}");
-        }
+        slotToResourceMap[slotIndex] = resourceType;
+        RefreshSlot(slotIndex);
     }
 }

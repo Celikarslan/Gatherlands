@@ -1,57 +1,77 @@
-using TMPro;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
+using TMPro;
 
 public class HotbarSlot : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDragHandler, IDropHandler
 {
-    private RectTransform rectTransform;
-    private CanvasGroup canvasGroup;
+    public Image itemIcon; // Icon for the resource
+    public TextMeshProUGUI resourceCount; // Text for the resource count
+    private int slotIndex; // Index of this slot in the hotbar
+    private HotbarUI hotbarUI; // Reference to the HotbarUI
 
-    public int slotIndex; // The index of this slot in the hotbar
-    public Image itemIcon; // Reference to the Image component for the resource icon
-    public TextMeshProUGUI resourceCount; // Reference to the TextMeshProUGUI component for the count
+    private GameObject dragIcon; // Temporary icon during drag
+    private Canvas dragCanvas;
 
-    private Transform originalParent;
-
-    void Awake()
+    public void Initialize(int index, HotbarUI ui)
     {
-        rectTransform = GetComponent<RectTransform>();
-        canvasGroup = GetComponent<CanvasGroup>();
+        slotIndex = index;
+        hotbarUI = ui;
+
+        // Find or create a drag canvas for animations
+        dragCanvas = FindObjectOfType<Canvas>();
+    }
+
+    public void UpdateSlot(Sprite icon, string count)
+    {
+        itemIcon.sprite = icon;
+        itemIcon.color = icon == null ? new Color(1, 1, 1, 0) : Color.white; // Make icon transparent if null
+        resourceCount.text = count;
     }
 
     public void OnBeginDrag(PointerEventData eventData)
     {
-        originalParent = transform.parent; // Store the original parent
-        transform.SetParent(originalParent.parent); // Temporarily unparent the slot for dragging
-        canvasGroup.blocksRaycasts = false; // Disable raycasts so other slots can detect the drop
+        
+
+        if (itemIcon.sprite == null) return;
+
+        // Create a temporary icon for dragging
+        dragIcon = new GameObject("DragIcon");
+        dragIcon.transform.SetParent(dragCanvas.transform, false);
+        dragIcon.transform.SetAsLastSibling();
+
+        Image icon = dragIcon.AddComponent<Image>();
+        icon.sprite = itemIcon.sprite;
+        icon.raycastTarget = false; // Prevent raycast blocking
+
+        RectTransform rt = dragIcon.GetComponent<RectTransform>();
+        rt.sizeDelta = new Vector2(100, 100); // Adjust size of the dragging icon
     }
 
     public void OnDrag(PointerEventData eventData)
     {
-        rectTransform.position = Input.mousePosition; // Follow the mouse cursor
+        if (dragIcon == null) return;
+
+        // Move the drag icon with the cursor
+        dragIcon.transform.position = Input.mousePosition;
     }
 
     public void OnEndDrag(PointerEventData eventData)
     {
-        transform.SetParent(originalParent); // Return to the original parent
-        transform.localPosition = Vector3.zero; // Snap back to the original position
-        canvasGroup.blocksRaycasts = true; // Re-enable raycasts
+        // Destroy the drag icon when dragging ends
+        if (dragIcon != null)
+        {
+            Destroy(dragIcon);
+        }
     }
 
     public void OnDrop(PointerEventData eventData)
     {
-        // Get the slot being dragged
-        HotbarSlot draggedSlot = eventData.pointerDrag.GetComponent<HotbarSlot>();
+        HotbarSlot draggedSlot = eventData.pointerDrag?.GetComponent<HotbarSlot>();
+
         if (draggedSlot != null && draggedSlot != this)
         {
-            // Find the HotbarUI instance
-            HotbarUI hotbarUI = FindObjectOfType<HotbarUI>();
-            if (hotbarUI != null)
-            {
-                // Swap the two slots
-                hotbarUI.SwapSlots(draggedSlot.slotIndex, this.slotIndex);
-            }
+            hotbarUI.SwapResources(draggedSlot.slotIndex, slotIndex);
         }
     }
 }

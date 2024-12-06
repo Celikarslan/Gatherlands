@@ -111,10 +111,10 @@ public class ProceduralTerrainGenerator : MonoBehaviour
 
                 tilemap.SetTile(new Vector3Int(worldX, worldY, 0), tileToPlace);
             }
-
-            // Spawn resources in this chunk
-            resourceSpawner.SpawnResources(chunkPosition);
         }
+
+        // Spawn resources in this chunk
+        resourceSpawner.SpawnResourcesWithTileCheck(chunkPosition, tilemap);
     }
 
     float GeneratePerlinNoise(int worldX, int worldY)

@@ -375,12 +375,12 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   treePrefab: {fileID: 4784367813985684689, guid: 5600f9a90879c3b45ba27e758f156bf8, type: 3}
   stonePrefab: {fileID: 4076227738220999020, guid: 2aa10261930ce0d4db00fc4fe02c6b4a, type: 3}
-  groundTilemap: {fileID: 109893487}
+  coalPrefab: {fileID: 4084514191451784556, guid: 86f2b6f942c0c0346b3ca16a6c6c575f, type: 3}
+  ironPrefab: {fileID: 5092840465141347947, guid: 4b817ae4d3378cc4eac769faad9ae774, type: 3}
+  goldPrefab: {fileID: 7792627038144800235, guid: 741a48053ce96654dba2fa8f721b05f6, type: 3}
   grassTile: {fileID: 11400000, guid: 3b4686a0692ff0b499bfb7ebbe6f6de3, type: 2}
-  sandTile: {fileID: 11400000, guid: 8d8a8f67d54c1b44bac767a22c5e2da1, type: 2}
-  treesPerChunk: 3
-  stonesPerChunk: 2
-  chunkSize: 16
+  resourcesPerChunk: 10
+  groundTilemap: {fileID: 109893487}
 --- !u!4 &570579333
 Transform:
   m_ObjectHideFlags: 0
@@ -795,10 +795,10 @@ RectTransform:
   m_Children: []
   m_Father: {fileID: 1252543594}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0.5, y: 0}
-  m_AnchorMax: {x: 0.5, y: 0}
+  m_AnchorMin: {x: 0, y: 0}
+  m_AnchorMax: {x: 1, y: 0}
   m_AnchoredPosition: {x: 0, y: 0}
-  m_SizeDelta: {x: 300, y: 300}
+  m_SizeDelta: {x: 0, y: 300}
   m_Pivot: {x: 0.5, y: 0}
 --- !u!114 &1096372700
 MonoBehaviour:

@@ -9,7 +9,7 @@ public class ResourceManager : MonoBehaviour
     private Dictionary<string, int> inventory = new Dictionary<string, int>();
 
     // Event to notify the hotbar of inventory changes
-    public event Action OnInventoryChanged;
+    public event Action<string, int> OnInventoryChanged; // Sends resource type and new count
 
     private void Awake()
     {
@@ -27,15 +27,36 @@ public class ResourceManager : MonoBehaviour
     public void AddResource(string resourceType)
     {
         if (!inventory.ContainsKey(resourceType))
-        {
             inventory[resourceType] = 0;
-        }
 
         inventory[resourceType]++;
         Debug.Log($"Collected {resourceType}. Total: {inventory[resourceType]}");
 
-        // Notify listeners that the inventory has changed
-        OnInventoryChanged?.Invoke();
+        // Notify listeners about the inventory change
+        OnInventoryChanged?.Invoke(resourceType, inventory[resourceType]);
+    }
+
+    public void RemoveResource(string resourceType, int amount)
+    {
+        if (inventory.ContainsKey(resourceType))
+        {
+            inventory[resourceType] -= amount;
+            if (inventory[resourceType] <= 0)
+            {
+                inventory.Remove(resourceType); // Remove the resource if count is zero or less
+                Debug.Log($"Resource '{resourceType}' depleted and removed from inventory.");
+            }
+
+            // Notify listeners about the inventory change
+            OnInventoryChanged?.Invoke(resourceType, inventory.ContainsKey(resourceType) ? inventory[resourceType] : 0);
+        }
+    }
+
+    public int GetResourceCount(string resourceType)
+    {
+        if (inventory.ContainsKey(resourceType))
+            return inventory[resourceType];
+        return 0;
     }
 
     public Dictionary<string, int> GetInventory()

@@ -1,4 +1,3 @@
-using System.Resources;
 using UnityEngine;
 
 public class Resource : MonoBehaviour
@@ -7,6 +6,11 @@ public class Resource : MonoBehaviour
     public string resourceType; // Type of resource (e.g., "Tree", "Stone")
 
     private int currentClicks = 0; // Tracks clicks received
+
+    public void Initialize(string type)
+    {
+        resourceType = type;
+    }
 
     void OnMouseDown()
     {

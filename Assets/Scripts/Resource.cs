@@ -1,35 +1,125 @@
+using System.Collections;
 using UnityEngine;
+using UnityEngine.UI;
 
 public class Resource : MonoBehaviour
 {
-    public int clicksToBreak = 3; // Number of clicks to break this resource
-    public string resourceType; // Type of resource (e.g., "Tree", "Stone")
+    public string resourceType; // Type of the resource (e.g., "Tree", "Stone")
+    public int maxHealth = 3; // Maximum health of the resource
+    private int currentHealth;
 
-    private int currentClicks = 0; // Tracks clicks received
 
-    public void Initialize(string type)
+    private SpriteRenderer spriteRenderer;
+    private Color originalColor;
+
+    public GameObject healthBarPrefab;
+    private GameObject healthBarInstance;
+    private Slider healthBarSlider;
+    private Image healthBarFill;
+
+    private void Start()
     {
-        resourceType = type;
+        currentHealth = maxHealth;
+        spriteRenderer = GetComponent<SpriteRenderer>();
+        originalColor = spriteRenderer.color;
     }
 
-    void OnMouseDown()
+    private void OnMouseEnter()
     {
-        // Increment click count
-        currentClicks++;
+        // Highlight the resource when moused over
+        spriteRenderer.color = Color.yellow;
+    }
 
-        // Check if the resource should break
-        if (currentClicks >= clicksToBreak)
+    private void OnMouseExit()
+    {
+        // Reset the highlight when the mouse leaves
+        spriteRenderer.color = originalColor;
+    }
+
+    public void HitResource()
+    {
+        if (healthBarInstance == null)
         {
-            CollectResource();
+            healthBarInstance = Instantiate(healthBarPrefab, transform.position, Quaternion.identity);
+            healthBarInstance.transform.SetParent(transform);
+
+            // Position the health bar dynamically
+            BoxCollider2D collider = GetComponent<BoxCollider2D>();
+            if (collider != null)
+            {
+                healthBarInstance.transform.position = new Vector3(
+                    collider.bounds.center.x,
+                    collider.bounds.max.y + 0.1f,
+                    transform.position.z
+                );
+            }
+
+            healthBarSlider = healthBarInstance.GetComponentInChildren<Slider>();
+            healthBarFill = healthBarSlider.fillRect.GetComponent<Image>(); // Reference the Fill image
+        }
+
+        if (healthBarFill != null)
+        {
+            UpdateHealthBarColor();
+        }
+
+        if (healthBarSlider != null)
+        {
+            healthBarSlider.maxValue = maxHealth;
+            healthBarSlider.value = currentHealth;
+        }
+
+        currentHealth--;
+
+        if (healthBarSlider != null)
+        {
+            healthBarSlider.value = currentHealth;
+        }
+
+        if (currentHealth <= 0)
+        {
+            Destroy(healthBarInstance);
+            Destroy(gameObject);
+            ResourceManager.Instance.AddResource(resourceType);
         }
     }
 
-    void CollectResource()
+    private void UpdateHealthBarColor()
     {
-        // Add resource to the player's inventory
-        ResourceManager.Instance.AddResource(resourceType);
+        // Change the color based on health percentage
+        float healthPercentage = (float)currentHealth / maxHealth;
 
-        // Destroy the resource object
-        Destroy(gameObject);
+        if (healthPercentage > 0.5f)
+        {
+            healthBarFill.color = Color.green; // Full health
+        }
+        else if (healthPercentage > 0.2f)
+        {
+            healthBarFill.color = Color.yellow; // Medium health
+        }
+        else
+        {
+            healthBarFill.color = Color.red; // Low health
+        }
     }
+
+
+
+    private IEnumerator SmoothHealthChange(float targetValue)
+    {
+        float currentValue = healthBarSlider.value;
+
+        float elapsed = 0f;
+        float duration = 0.3f; // Smooth animation duration
+
+        while (elapsed < duration)
+        {
+            elapsed += Time.deltaTime;
+            healthBarSlider.value = Mathf.Lerp(currentValue, targetValue, elapsed / duration);
+            yield return null;
+        }
+
+        healthBarSlider.value = targetValue;
+    }
+
 }

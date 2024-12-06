@@ -143,5 +143,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: add12f6bbf5c7a842a53218a4161f762, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  clicksToBreak: 10
   resourceType: ironchunk
+  maxHealth: 10
+  healthBarPrefab: {fileID: 7813102477658341372, guid: 80441dacbfb2cd040b2a861cb0a12d2f, type: 3}

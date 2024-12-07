@@ -8,6 +8,7 @@ public class Resource : MonoBehaviour
     public int maxHealth = 3; // Maximum health of the resource
     private int currentHealth;
 
+    public string requiredTool; // The name of the tool required to break this resource
 
     private SpriteRenderer spriteRenderer;
     private Color originalColor;
@@ -16,6 +17,8 @@ public class Resource : MonoBehaviour
     private GameObject healthBarInstance;
     private Slider healthBarSlider;
     private Image healthBarFill;
+
+    private Coroutine healthBarFadeCoroutine;
 
     private void Start()
     {
@@ -36,14 +39,20 @@ public class Resource : MonoBehaviour
         spriteRenderer.color = originalColor;
     }
 
-    public void HitResource()
+    public void HitResource(Tool playerTool)
     {
+        // Check if the player has the correct tool equipped
+        if (!CanBreakWithTool(playerTool))
+        {
+            Debug.Log($"Cannot break {resourceType}. Requires {requiredTool}.");
+            return;
+        }
+
         if (healthBarInstance == null)
         {
             healthBarInstance = Instantiate(healthBarPrefab, transform.position, Quaternion.identity);
             healthBarInstance.transform.SetParent(transform);
 
-            // Position the health bar dynamically
             BoxCollider2D collider = GetComponent<BoxCollider2D>();
             if (collider != null)
             {
@@ -55,25 +64,22 @@ public class Resource : MonoBehaviour
             }
 
             healthBarSlider = healthBarInstance.GetComponentInChildren<Slider>();
-            healthBarFill = healthBarSlider.fillRect.GetComponent<Image>(); // Reference the Fill image
         }
 
-        if (healthBarFill != null)
+        if (healthBarFadeCoroutine != null)
         {
-            UpdateHealthBarColor();
+            StopCoroutine(healthBarFadeCoroutine);
         }
 
-        if (healthBarSlider != null)
-        {
-            healthBarSlider.maxValue = maxHealth;
-            healthBarSlider.value = currentHealth;
-        }
+        healthBarInstance.SetActive(true);
+        healthBarSlider.maxValue = maxHealth;
+        healthBarSlider.value = currentHealth;
 
         currentHealth--;
 
         if (healthBarSlider != null)
         {
-            healthBarSlider.value = currentHealth;
+            StartCoroutine(SmoothHealthChange(currentHealth));
         }
 
         if (currentHealth <= 0)
@@ -82,6 +88,27 @@ public class Resource : MonoBehaviour
             Destroy(gameObject);
             ResourceManager.Instance.AddResource(resourceType);
         }
+        else
+        {
+            healthBarFadeCoroutine = StartCoroutine(FadeOutHealthBar());
+        }
+    }
+
+    private bool CanBreakWithTool(Tool playerTool)
+    {
+        // If no tool is required, allow breaking
+        if (string.IsNullOrEmpty(requiredTool)) return true;
+
+        // If the player doesn't have a tool, they can't break this resource
+        if (playerTool == null) return false;
+
+        // Check if the player's tool matches the required tool
+        foreach (string toolType in playerTool.breakableResources)
+        {
+            if (toolType == resourceType) return true;
+        }
+
+        return false;
     }
 
     private void UpdateHealthBarColor()
@@ -103,8 +130,6 @@ public class Resource : MonoBehaviour
         }
     }
 
-
-
     private IEnumerator SmoothHealthChange(float targetValue)
     {
         float currentValue = healthBarSlider.value;
@@ -122,4 +147,12 @@ public class Resource : MonoBehaviour
         healthBarSlider.value = targetValue;
     }
 
+    private IEnumerator FadeOutHealthBar()
+    {
+        yield return new WaitForSeconds(1.5f);
+        if (healthBarInstance != null)
+        {
+            healthBarInstance.SetActive(false);
+        }
+    }
 }

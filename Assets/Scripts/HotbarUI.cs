@@ -17,20 +17,28 @@ public class HotbarUI : MonoBehaviour
         InitializeHotbar();
     }
 
-    public void AddResource(string resourceType)
+    public void UpdateHotbar()
     {
-        // Find the first empty slot
+        // Iterate through all hotbar slots and refresh their content
         for (int i = 0; i < hotbarSize; i++)
         {
-            if (!slotToResourceMap.ContainsKey(i))
+            if (slotToResourceMap.ContainsKey(i))
             {
-                slotToResourceMap[i] = resourceType;
-                RefreshSlot(i);
-                return;
+                string resourceType = slotToResourceMap[i];
+                int resourceCount = ResourceManager.Instance.GetResourceCount(resourceType);
+
+                if (resourceCount > 0)
+                {
+                    RefreshSlot(i);
+                }
+                else
+                {
+                    // If the resource count is 0, clear the slot
+                    slotToResourceMap.Remove(i);
+                    ClearSlot(i);
+                }
             }
         }
-
-        Debug.LogWarning("No empty slots available in the hotbar!");
     }
 
     public void AddOrIncrementResource(string resourceType)
@@ -46,10 +54,24 @@ public class HotbarUI : MonoBehaviour
         }
 
         // If not found, add it to a new slot
-        AddResource(resourceType);
+        AddResourceToEmptySlot(resourceType);
     }
 
+    public void AddResourceToEmptySlot(string resourceType)
+    {
+        // Find the first empty slot
+        for (int i = 0; i < hotbarSize; i++)
+        {
+            if (!slotToResourceMap.ContainsKey(i))
+            {
+                slotToResourceMap[i] = resourceType;
+                RefreshSlot(i);
+                return;
+            }
+        }
 
+        Debug.LogWarning("No empty slots available in the hotbar!");
+    }
 
     private void InitializeHotbar()
     {
@@ -78,7 +100,6 @@ public class HotbarUI : MonoBehaviour
             ClearSlot(i); // Initialize the slot as empty
         }
     }
-
 
     public void SwapResources(int indexA, int indexB)
     {
@@ -118,13 +139,17 @@ public class HotbarUI : MonoBehaviour
             string resourceType = slotToResourceMap[slotIndex];
             int resourceCount = ResourceManager.Instance.GetResourceCount(resourceType);
 
-            hotbarSlot.UpdateSlot(GetResourceIcon(resourceType), resourceCount.ToString());
+            // Only show the count if it's greater than 1
+            string countText = resourceCount > 1 ? resourceCount.ToString() : "";
+
+            hotbarSlot.UpdateSlot(GetResourceIcon(resourceType), countText);
         }
         else
         {
             ClearSlot(slotIndex);
         }
     }
+
 
     private void ClearSlot(int slotIndex)
     {
@@ -140,7 +165,6 @@ public class HotbarUI : MonoBehaviour
         hotbarSlot.UpdateSlot(null, ""); // Clear the slot
     }
 
-
     private Sprite GetResourceIcon(string resourceType)
     {
         // Dynamically load resource icons from the Resources folder
@@ -151,5 +175,32 @@ public class HotbarUI : MonoBehaviour
     {
         slotToResourceMap[slotIndex] = resourceType;
         RefreshSlot(slotIndex);
+    }
+
+    public bool HasEmptySlot()
+    {
+        for (int i = 0; i < slots.Count; i++)
+        {
+            if (!slotToResourceMap.ContainsKey(i))
+            {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    public void AddCraftedToolToEmptySlot(Tool craftedTool)
+    {
+        for (int i = 0; i < slots.Count; i++)
+        {
+            if (!slotToResourceMap.ContainsKey(i))
+            {
+                slotToResourceMap[i] = craftedTool.toolName;
+                RefreshSlot(i);
+                return;
+            }
+        }
+
+        Debug.LogWarning("No empty slots available in the hotbar!");
     }
 }

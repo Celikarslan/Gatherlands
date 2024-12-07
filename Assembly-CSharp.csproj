@@ -65,11 +65,14 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Assets\Scripts\TreeRendererSorter.cs" />
+    <Compile Include="Assets\Scripts\Tool.cs" />
     <Compile Include="Assets\Scripts\PlayerController.cs" />
+    <Compile Include="Assets\Scripts\CraftingButton.cs" />
     <Compile Include="Assets\Scripts\ResourceManager.cs" />
     <Compile Include="Assets\Scripts\Resource.cs" />
     <Compile Include="Assets\Scripts\CameraFollow.cs" />
     <Compile Include="Assets\Scripts\DraggableSlot.cs" />
+    <Compile Include="Assets\Scripts\CraftingManager.cs" />
     <Compile Include="Assets\Scripts\HotbarUI.cs" />
     <Compile Include="Assets\Scripts\ProceduralTerrainGenerator.cs" />
     <Compile Include="Assets\Scripts\ResourceSpawner.cs" />

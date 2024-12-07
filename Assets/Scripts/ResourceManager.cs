@@ -29,9 +29,30 @@ public class ResourceManager : MonoBehaviour
         hotbarUI.AddOrIncrementResource(resourceType);
     }
 
-
     public int GetResourceCount(string resourceType)
     {
         return inventory.ContainsKey(resourceType) ? inventory[resourceType] : 0;
+    }
+
+    public bool ConsumeResource(string resourceType, int amount)
+    {
+        if (inventory.ContainsKey(resourceType) && inventory[resourceType] >= amount)
+        {
+            inventory[resourceType] -= amount;
+
+            // Update the HotbarUI to reflect the new resource count
+            HotbarUI hotbarUI = FindObjectOfType<HotbarUI>();
+            if (hotbarUI != null)
+            {
+                hotbarUI.UpdateHotbar();
+            }
+
+            return true; // Successfully consumed the resource
+        }
+        else
+        {
+            Debug.LogWarning($"Not enough {resourceType} to consume! Required: {amount}, Available: {GetResourceCount(resourceType)}");
+            return false; // Not enough resources
+        }
     }
 }

@@ -29,7 +29,6 @@ public class ResourceManager : MonoBehaviour
         hotbarUI.AddOrIncrementResource(resourceType);
     }
 
-
     public int GetResourceCount(string resourceType)
     {
         return inventory.ContainsKey(resourceType) ? inventory[resourceType] : 0;

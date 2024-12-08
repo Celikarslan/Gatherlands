@@ -48,7 +48,6 @@ public class Resource : MonoBehaviour
             return;
         }
 
-        // Initialize health bar if it doesn't exist
         if (healthBarInstance == null)
         {
             healthBarInstance = Instantiate(healthBarPrefab, transform.position, Quaternion.identity);
@@ -65,7 +64,6 @@ public class Resource : MonoBehaviour
             }
 
             healthBarSlider = healthBarInstance.GetComponentInChildren<Slider>();
-            healthBarFill = healthBarSlider.fillRect.GetComponent<Image>();
         }
 
         if (healthBarFadeCoroutine != null)
@@ -75,17 +73,10 @@ public class Resource : MonoBehaviour
 
         healthBarInstance.SetActive(true);
         healthBarSlider.maxValue = maxHealth;
+        healthBarSlider.value = currentHealth;
 
-        // Apply damage considering tool efficiency
-        int damage = 1;
-        if (playerTool != null)
-        {
-            damage = Mathf.CeilToInt(damage * playerTool.speedMultiplier);
-        }
+        currentHealth--;
 
-        currentHealth -= damage;
-
-        // Smoothly update health bar
         if (healthBarSlider != null)
         {
             StartCoroutine(SmoothHealthChange(currentHealth));
@@ -93,7 +84,9 @@ public class Resource : MonoBehaviour
 
         if (currentHealth <= 0)
         {
-            StartCoroutine(HandleResourceDestruction());
+            Destroy(healthBarInstance);
+            Destroy(gameObject);
+            ResourceManager.Instance.AddResource(resourceType);
         }
         else
         {
@@ -101,80 +94,12 @@ public class Resource : MonoBehaviour
         }
     }
 
-
-    private IEnumerator HandleResourceDestruction()
-    {
-        // Ensure the health bar smoothly transitions to 0
-        if (healthBarSlider != null)
-        {
-            yield return SmoothHealthChange(0);
-        }
-
-        Destroy(healthBarInstance); // Remove the health bar
-        Destroy(gameObject); // Remove the resource
-        ResourceManager.Instance.AddResource(resourceType);
-    }
-
-    private IEnumerator SmoothHealthChange(int targetHealth)
-    {
-        float currentValue = healthBarSlider.value;
-        float targetValue = Mathf.Clamp(targetHealth, 0, maxHealth);
-
-        float elapsed = 0f;
-        float duration = 0.3f; // Smooth animation duration
-
-        while (elapsed < duration)
-        {
-            elapsed += Time.deltaTime;
-            healthBarSlider.value = Mathf.Lerp(currentValue, targetValue, elapsed / duration);
-
-            // Update the health bar color dynamically
-            UpdateHealthBarColor(healthBarSlider.value / maxHealth);
-
-            yield return null;
-        }
-
-        healthBarSlider.value = targetValue;
-
-        // Update the color one last time at the final value
-        UpdateHealthBarColor(targetValue / maxHealth);
-    }
-
-    private void UpdateHealthBarColor(float healthPercentage)
-    {
-        // Change the color based on health percentage
-        if (healthBarFill != null)
-        {
-            if (healthPercentage > 0.5f)
-            {
-                healthBarFill.color = Color.green; // Full health
-            }
-            else if (healthPercentage > 0.2f)
-            {
-                healthBarFill.color = Color.yellow; // Medium health
-            }
-            else
-            {
-                healthBarFill.color = Color.red; // Low health
-            }
-        }
-    }
-
-    private IEnumerator FadeOutHealthBar()
-    {
-        yield return new WaitForSeconds(1.5f);
-        if (healthBarInstance != null)
-        {
-            healthBarInstance.SetActive(false);
-        }
-    }
-
-    public bool CanBreakWithTool(Tool playerTool)
+    private bool CanBreakWithTool(Tool playerTool)
     {
         // If no tool is required, allow breaking
         if (string.IsNullOrEmpty(requiredTool)) return true;
 
-        // If no tool is equipped, the resource cannot be broken
+        // If the player doesn't have a tool, they can't break this resource
         if (playerTool == null) return false;
 
         // Check if the player's tool matches the required tool
@@ -186,5 +111,48 @@ public class Resource : MonoBehaviour
         return false;
     }
 
+    private void UpdateHealthBarColor()
+    {
+        // Change the color based on health percentage
+        float healthPercentage = (float)currentHealth / maxHealth;
 
+        if (healthPercentage > 0.5f)
+        {
+            healthBarFill.color = Color.green; // Full health
+        }
+        else if (healthPercentage > 0.2f)
+        {
+            healthBarFill.color = Color.yellow; // Medium health
+        }
+        else
+        {
+            healthBarFill.color = Color.red; // Low health
+        }
+    }
+
+    private IEnumerator SmoothHealthChange(float targetValue)
+    {
+        float currentValue = healthBarSlider.value;
+
+        float elapsed = 0f;
+        float duration = 0.3f; // Smooth animation duration
+
+        while (elapsed < duration)
+        {
+            elapsed += Time.deltaTime;
+            healthBarSlider.value = Mathf.Lerp(currentValue, targetValue, elapsed / duration);
+            yield return null;
+        }
+
+        healthBarSlider.value = targetValue;
+    }
+
+    private IEnumerator FadeOutHealthBar()
+    {
+        yield return new WaitForSeconds(1.5f);
+        if (healthBarInstance != null)
+        {
+            healthBarInstance.SetActive(false);
+        }
+    }
 }

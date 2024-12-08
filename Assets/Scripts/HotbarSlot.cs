@@ -1,82 +1,77 @@
 using UnityEngine;
+using UnityEngine.EventSystems;
 using UnityEngine.UI;
+using TMPro;
 
-public class HotbarSlot : MonoBehaviour
+public class HotbarSlot : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDragHandler, IDropHandler
 {
-    private int index;
-    private HotbarUI hotbarUI;
-    private Image icon;
-    private bool isSelected; // Tracks if this slot is selected
-    public Image selectionHighlight; // Optional: Highlight for selected slot
-    public Text countText; // Optional: For displaying resource count or extra info
+    public Image itemIcon; // Icon for the resource
+    public TextMeshProUGUI resourceCount; // Text for the resource count
+    private int slotIndex; // Index of this slot in the hotbar
+    private HotbarUI hotbarUI; // Reference to the HotbarUI
 
-    private void Awake()
+    private GameObject dragIcon; // Temporary icon during drag
+    private Canvas dragCanvas;
+
+    public void Initialize(int index, HotbarUI ui)
     {
-        icon = GetComponent<Image>();
-        if (selectionHighlight != null)
+        slotIndex = index;
+        hotbarUI = ui;
+
+        // Find or create a drag canvas for animations
+        dragCanvas = FindObjectOfType<Canvas>();
+    }
+
+    public void UpdateSlot(Sprite icon, string count)
+    {
+        itemIcon.sprite = icon;
+        itemIcon.color = icon == null ? new Color(1, 1, 1, 0) : Color.white; // Make icon transparent if null
+        resourceCount.text = count;
+    }
+
+    public void OnBeginDrag(PointerEventData eventData)
+    {
+        
+
+        if (itemIcon.sprite == null) return;
+
+        // Create a temporary icon for dragging
+        dragIcon = new GameObject("DragIcon");
+        dragIcon.transform.SetParent(dragCanvas.transform, false);
+        dragIcon.transform.SetAsLastSibling();
+
+        Image icon = dragIcon.AddComponent<Image>();
+        icon.sprite = itemIcon.sprite;
+        icon.raycastTarget = false; // Prevent raycast blocking
+
+        RectTransform rt = dragIcon.GetComponent<RectTransform>();
+        rt.sizeDelta = new Vector2(100, 100); // Adjust size of the dragging icon
+    }
+
+    public void OnDrag(PointerEventData eventData)
+    {
+        if (dragIcon == null) return;
+
+        // Move the drag icon with the cursor
+        dragIcon.transform.position = Input.mousePosition;
+    }
+
+    public void OnEndDrag(PointerEventData eventData)
+    {
+        // Destroy the drag icon when dragging ends
+        if (dragIcon != null)
         {
-            selectionHighlight.enabled = false; // Disable highlight by default
-        }
-        if (countText != null)
-        {
-            countText.text = ""; // Clear count text by default
+            Destroy(dragIcon);
         }
     }
 
-    public void Initialize(int slotIndex, HotbarUI parentUI)
+    public void OnDrop(PointerEventData eventData)
     {
-        index = slotIndex;
-        hotbarUI = parentUI;
-        ClearSlot();
-    }
+        HotbarSlot draggedSlot = eventData.pointerDrag?.GetComponent<HotbarSlot>();
 
-    public void UpdateSlot(Sprite toolIcon, string additionalText = "")
-    {
-        if (toolIcon != null)
+        if (draggedSlot != null && draggedSlot != this)
         {
-            icon.enabled = true;
-            icon.sprite = toolIcon;
-
-            // Update count text if provided
-            if (countText != null)
-            {
-                countText.text = additionalText;
-            }
+            hotbarUI.SwapResources(draggedSlot.slotIndex, slotIndex);
         }
-        else
-        {
-            ClearSlot();
-        }
-    }
-
-    public void ClearSlot()
-    {
-        icon.enabled = false;
-        icon.sprite = null;
-
-        if (selectionHighlight != null)
-        {
-            selectionHighlight.enabled = false;
-        }
-        if (countText != null)
-        {
-            countText.text = "";
-        }
-
-        isSelected = false;
-    }
-
-    public void SetSelected(bool selected)
-    {
-        isSelected = selected;
-        if (selectionHighlight != null)
-        {
-            selectionHighlight.enabled = selected; // Enable/disable highlight
-        }
-    }
-
-    public int GetSlotIndex()
-    {
-        return index;
     }
 }

@@ -49,24 +49,31 @@ public class CraftingManager : MonoBehaviour
             return;
         }
 
-        // Check if the player has enough resources
+        // Check if player has enough resources
         if (!HasRequiredResources(recipe))
         {
             Debug.LogWarning($"Not enough resources to craft {itemName}!");
             return;
         }
 
-        // Consume the resources
+        // Check for inventory space
+        if (!HasInventorySpace())
+        {
+            Debug.LogWarning("No available inventory space to craft this item!");
+            return;
+        }
+
+        // Consume resources
         foreach (var resource in recipe.requiredResources)
         {
             ResourceManager.Instance.ConsumeResource(resource.resourceType, resource.amount);
         }
 
-        // Add the crafted tool to the hotbar
+        // Craft the item
         if (recipe.craftedTool != null)
         {
-            AddToHotbar(recipe.craftedTool);
-            Debug.Log($"{itemName} crafted and added to hotbar!");
+            AddToInventory(recipe.craftedTool);
+            Debug.Log($"{itemName} crafted and added to inventory!");
         }
     }
 
@@ -88,28 +95,38 @@ public class CraftingManager : MonoBehaviour
         return true; // All resources are available
     }
 
-    private void AddToHotbar(Tool craftedTool)
+    private bool HasInventorySpace()
     {
+        // Check if there is an open slot in the hotbar
         HotbarUI hotbarUI = FindObjectOfType<HotbarUI>();
-        if (hotbarUI != null)
-        {
-            // Find the first available empty slot
-            for (int i = 0; i < hotbarUI.HotbarSize; i++)
-            {
-                if (!hotbarUI.SlotToResourceMap.ContainsKey(i)) // Empty slot
-                {
-                    hotbarUI.SlotToResourceMap[i] = craftedTool.toolName;
-                    hotbarUI.RefreshSlot(i); // Update the hotbar visuals
-                    Debug.Log($"Tool '{craftedTool.toolName}' added to hotbar in slot {i}.");
-                    return;
-                }
-            }
+        return hotbarUI.HasEmptySlot();
+    }
 
-            Debug.LogWarning("No empty slots available in the hotbar!");
-        }
-        else
+    private void AddToInventory(Tool craftedTool)
+    {
+        // Add the crafted tool to the first empty slot in the hotbar
+        HotbarUI hotbarUI = FindObjectOfType<HotbarUI>();
+        hotbarUI.AddCraftedToolToEmptySlot(craftedTool);
+
+        // Equip the crafted tool
+        PlayerController player = FindObjectOfType<PlayerController>();
+        if (player != null)
         {
-            Debug.LogWarning("HotbarUI not found. Tool could not be added to the hotbar.");
+            player.EquipTool(craftedTool);
         }
+
+        // Spawn the tool next to the player
+        SpawnToolInWorld(craftedTool);
+    }
+
+
+    private void SpawnToolInWorld(Tool craftedTool)
+    {
+        PlayerController player = FindObjectOfType<PlayerController>();
+        Vector3 spawnPosition = player.transform.position + new Vector3(1f, 0, 0); // Spawn next to player
+        GameObject toolObject = new GameObject(craftedTool.toolName); // Placeholder GameObject
+        toolObject.transform.position = spawnPosition;
+
+        Debug.Log($"{craftedTool.toolName} spawned next to the player!");
     }
 }

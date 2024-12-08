@@ -1,7 +1,6 @@
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
-using TMPro;
 
 public class HotbarUI : MonoBehaviour
 {
@@ -11,6 +10,10 @@ public class HotbarUI : MonoBehaviour
 
     private Dictionary<int, string> slotToResourceMap = new Dictionary<int, string>(); // Map slot index to resource type
     private int hotbarSize = 10; // Number of slots in the hotbar
+
+    public int HotbarSize => hotbarSize; // Public getter for hotbar size
+    public Dictionary<int, string> SlotToResourceMap => slotToResourceMap; // Public getter for slot map
+
 
     private void Start()
     {
@@ -57,20 +60,32 @@ public class HotbarUI : MonoBehaviour
         AddResourceToEmptySlot(resourceType);
     }
 
-    public void AddResourceToEmptySlot(string resourceType)
+    private void AddResourceToEmptySlot(string resourceType)
     {
-        // Find the first empty slot
         for (int i = 0; i < hotbarSize; i++)
         {
-            if (!slotToResourceMap.ContainsKey(i))
+            if (!slotToResourceMap.ContainsKey(i)) // Ensure the slot is empty
             {
                 slotToResourceMap[i] = resourceType;
                 RefreshSlot(i);
+                Debug.Log($"Resource '{resourceType}' added to hotbar in slot {i}.");
                 return;
             }
         }
 
-        Debug.LogWarning("No empty slots available in the hotbar!");
+        Debug.LogWarning("No empty slots available in the hotbar! Resource cannot be added.");
+    }
+
+    public bool HasEmptySlot()
+    {
+        for (int i = 0; i < hotbarSize; i++)
+        {
+            if (!slotToResourceMap.ContainsKey(i)) // Check if the slot is empty
+            {
+                return true;
+            }
+        }
+        return false; // No empty slots
     }
 
     private void InitializeHotbar()
@@ -101,35 +116,7 @@ public class HotbarUI : MonoBehaviour
         }
     }
 
-    public void SwapResources(int indexA, int indexB)
-    {
-        // Swap resources in the map
-        string tempResource = slotToResourceMap.ContainsKey(indexA) ? slotToResourceMap[indexA] : null;
-
-        if (slotToResourceMap.ContainsKey(indexB))
-        {
-            slotToResourceMap[indexA] = slotToResourceMap[indexB];
-        }
-        else
-        {
-            slotToResourceMap.Remove(indexA);
-        }
-
-        if (tempResource != null)
-        {
-            slotToResourceMap[indexB] = tempResource;
-        }
-        else
-        {
-            slotToResourceMap.Remove(indexB);
-        }
-
-        // Refresh visuals for both slots
-        RefreshSlot(indexA);
-        RefreshSlot(indexB);
-    }
-
-    private void RefreshSlot(int slotIndex)
+    public void RefreshSlot(int slotIndex)
     {
         GameObject slot = slots[slotIndex];
         HotbarSlot hotbarSlot = slot.GetComponent<HotbarSlot>();
@@ -150,7 +137,6 @@ public class HotbarUI : MonoBehaviour
         }
     }
 
-
     private void ClearSlot(int slotIndex)
     {
         GameObject slot = slots[slotIndex];
@@ -169,38 +155,5 @@ public class HotbarUI : MonoBehaviour
     {
         // Dynamically load resource icons from the Resources folder
         return Resources.Load<Sprite>($"Icons/{resourceType}");
-    }
-
-    public void AddResourceToSlot(int slotIndex, string resourceType)
-    {
-        slotToResourceMap[slotIndex] = resourceType;
-        RefreshSlot(slotIndex);
-    }
-
-    public bool HasEmptySlot()
-    {
-        for (int i = 0; i < slots.Count; i++)
-        {
-            if (!slotToResourceMap.ContainsKey(i))
-            {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    public void AddCraftedToolToEmptySlot(Tool craftedTool)
-    {
-        for (int i = 0; i < slots.Count; i++)
-        {
-            if (!slotToResourceMap.ContainsKey(i))
-            {
-                slotToResourceMap[i] = craftedTool.toolName;
-                RefreshSlot(i);
-                return;
-            }
-        }
-
-        Debug.LogWarning("No empty slots available in the hotbar!");
     }
 }

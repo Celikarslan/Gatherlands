@@ -157,5 +157,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   resourceType: wood
-  maxHealth: 3
+  maxHealth: 8
+  requiredTool: 
   healthBarPrefab: {fileID: 7813102477658341372, guid: 80441dacbfb2cd040b2a861cb0a12d2f, type: 3}
